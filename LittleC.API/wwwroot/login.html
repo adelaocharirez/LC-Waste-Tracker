@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>LC Waste Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --red: #C8102E;
+    --red-dark: #A50D26;
+    --red-dim: rgba(200, 16, 46, 0.12);
+    --bg: #0F0F0F;
+    --surface: #1A1A1A;
+    --surface2: #222222;
+    --border: rgba(255,255,255,0.08);
+    --text: #F0F0F0;
+    --text-muted: #777;
+    --text-dim: #444;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+  }
+
+  .screen { display: none; min-height: 100vh; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  /* ── HEADER ── */
+  .header {
+    padding: 20px 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo {
+    width: 38px; height: 38px;
+    background: var(--red);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; color: #fff;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+  .header-text h1 {
+    font-size: 16px; font-weight: 600; color: var(--text);
+    line-height: 1.2;
+  }
+  .header-text p {
+    font-size: 12px; color: var(--text-muted);
+    margin-top: 1px;
+  }
+
+  .step-label {
+    padding: 28px 20px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* ── USER LIST ── */
+  .user-list {
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+  }
+  .user-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .user-card:active { transform: scale(0.98); }
+  .user-card.selected {
+    border-color: var(--red);
+    background: var(--red-dim);
+  }
+  .user-avatar {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 600; color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .user-card.selected .user-avatar {
+    background: var(--red);
+    border-color: var(--red);
+    color: #fff;
+  }
+  .user-info { flex: 1; }
+  .user-name { font-size: 15px; font-weight: 500; color: var(--text); }
+  .user-role {
+    font-size: 12px; color: var(--text-muted);
+    margin-top: 2px; text-transform: capitalize;
+  }
+  .user-check {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    border: 1.5px solid var(--text-dim);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .user-card.selected .user-check {
+    background: var(--red);
+    border-color: var(--red);
+  }
+  .user-check::after {
+    content: '';
+    width: 5px; height: 9px;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    transform: rotate(45deg) translate(-1px, -1px);
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .user-card.selected .user-check::after { opacity: 1; }
+
+  /* ── CONTINUE BTN ── */
+  .continue-wrap { padding: 20px; }
+  .btn-continue {
+    width: 100%;
+    padding: 16px;
+    background: var(--red);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    letter-spacing: 0.3px;
+  }
+  .btn-continue:active { background: var(--red-dark); transform: scale(0.98); }
+  .btn-continue:disabled {
+    background: var(--surface2);
+    color: var(--text-dim);
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* ── PIN SCREEN ── */
+  .pin-screen { padding: 20px; flex-direction: column; }
+  .back-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: none; border: none;
+    color: var(--text-muted); font-family: 'Inter', sans-serif;
+    font-size: 14px; cursor: pointer; padding: 0;
+    margin-bottom: 28px;
+  }
+  .back-arrow {
+    width: 20px; height: 20px;
+    border-left: 2px solid var(--text-muted);
+    border-bottom: 2px solid var(--text-muted);
+    transform: rotate(45deg);
+    flex-shrink: 0;
+  }
+  .pin-greeting {
+    font-size: 22px; font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .pin-sub {
+    font-size: 14px; color: var(--text-muted);
+    margin-bottom: 36px;
+  }
+
+  /* PIN dots */
+  .pin-dots {
+    display: flex; gap: 14px;
+    justify-content: center;
+    margin-bottom: 36px;
+  }
+  .pin-dot {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 1.5px solid var(--text-dim);
+    transition: all 0.15s;
+  }
+  .pin-dot.filled {
+    background: var(--red);
+    border-color: var(--red);
+  }
+  .pin-dot.error {
+    background: none;
+    border-color: #E24B4A;
+    animation: shake 0.3s ease;
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+  }
+
+  /* Keypad */
+  .keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+  .key {
+    aspect-ratio: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.1s, transform 0.1s;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .key:active { background: var(--surface2); transform: scale(0.94); }
+  .key.key-del {
+    font-size: 13px; font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.3px;
+  }
+  .key.key-empty { background: none; border: none; cursor: default; }
+  .key.key-empty:active { transform: none; }
+
+  /* PIN error message */
+  .pin-error {
+    text-align: center;
+    font-size: 13px;
+    color: #E24B4A;
+    margin-top: 20px;
+    min-height: 18px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .pin-error.show { opacity: 1; }
+
+  /* ── LOADING ── */
+  .loading-overlay {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 16px;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .loading-overlay.show { opacity: 1; pointer-events: all; }
+  .spinner {
+    width: 32px; height: 32px;
+    border: 2.5px solid var(--surface2);
+    border-top-color: var(--red);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 14px; color: var(--text-muted); }
+
+  /* ── DASHBOARD (placeholder) ── */
+  .dashboard-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .dash-user { font-size: 13px; color: var(--text-muted); }
+  .dash-user span { color: var(--text); font-weight: 500; }
+  .logout-btn {
+    background: none; border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 12px;
+    color: var(--text-muted); font-family: 'Inter', sans-serif;
+    font-size: 12px; cursor: pointer;
+  }
+  .logout-btn:active { background: var(--surface2); }
+  .dash-content {
+    padding: 28px 20px;
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 12px;
+    text-align: center;
+  }
+  .dash-icon {
+    width: 56px; height: 56px;
+    background: var(--red-dim);
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 4px;
+  }
+  .dash-icon svg { width: 28px; height: 28px; }
+  .dash-title { font-size: 20px; font-weight: 600; color: var(--text); }
+  .dash-sub { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 260px; }
+  .dash-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(46, 204, 113, 0.12);
+    border: 1px solid rgba(46, 204, 113, 0.25);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 12px; font-weight: 500;
+    color: #2ecc71;
+    margin-top: 8px;
+  }
+  .dash-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #2ecc71;
+  }
+</style>
+</head>
+<body>
+
+<!-- SCREEN 1: SELECT USER -->
+<div class="screen active" id="screen-select">
+  <div class="header">
+    <div class="logo">LC</div>
+    <div class="header-text">
+      <h1>Waste Tracker</h1>
+      <p>Saddle Creek</p>
+    </div>
+  </div>
+
+  <div class="step-label">Select your name</div>
+
+  <div class="user-list" id="user-list">
+    <div style="text-align:center; padding: 40px 0; color: var(--text-muted); font-size:14px;">
+      Loading staff...
+    </div>
+  </div>
+
+  <div class="continue-wrap">
+    <button class="btn-continue" id="btn-continue" disabled onclick="goToPin()">
+      Continue
+    </button>
+  </div>
+</div>
+
+<!-- SCREEN 2: PIN ENTRY -->
+<div class="screen pin-screen" id="screen-pin">
+  <button class="back-btn" onclick="goBack()">
+    <div class="back-arrow"></div>
+    Back
+  </button>
+
+  <div class="pin-greeting" id="pin-greeting">Hello!</div>
+  <div class="pin-sub">Enter your 4-digit PIN</div>
+
+  <div class="pin-dots">
+    <div class="pin-dot" id="dot-0"></div>
+    <div class="pin-dot" id="dot-1"></div>
+    <div class="pin-dot" id="dot-2"></div>
+    <div class="pin-dot" id="dot-3"></div>
+  </div>
+
+  <div class="keypad">
+    <div class="key" onclick="pressKey('1')">1</div>
+    <div class="key" onclick="pressKey('2')">2</div>
+    <div class="key" onclick="pressKey('3')">3</div>
+    <div class="key" onclick="pressKey('4')">4</div>
+    <div class="key" onclick="pressKey('5')">5</div>
+    <div class="key" onclick="pressKey('6')">6</div>
+    <div class="key" onclick="pressKey('7')">7</div>
+    <div class="key" onclick="pressKey('8')">8</div>
+    <div class="key" onclick="pressKey('9')">9</div>
+    <div class="key key-empty"></div>
+    <div class="key" onclick="pressKey('0')">0</div>
+    <div class="key key-del" onclick="deleteKey()">DEL</div>
+  </div>
+
+  <div class="pin-error" id="pin-error">Incorrect PIN. Please try again.</div>
+</div>
+
+<!-- SCREEN 3: DASHBOARD PLACEHOLDER -->
+<div class="screen" id="screen-dashboard">
+  <div class="dashboard-header">
+    <div class="dash-user">Logged in as <span id="dash-name">—</span></div>
+    <button class="logout-btn" onclick="logout()">Sign out</button>
+  </div>
+  <div class="dash-content">
+    <div class="dash-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#C8102E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 11l3 3L22 4"/>
+        <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+      </svg>
+    </div>
+    <div class="dash-title">You're in!</div>
+    <div class="dash-sub">Login is working. The full dashboard and waste logging screens are coming next.</div>
+    <div class="dash-badge">
+      <div class="dash-dot"></div>
+      Connected to API
+    </div>
+  </div>
+</div>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text">Verifying PIN...</div>
+</div>
+
+<script>
+const API = 'http://littlecaesarswastetracker-env.eba-3hixjq7q.us-east-1.elasticbeanstalk.com';
+let selectedUser = null;
+let pin = '';
+let users = [];
+
+// ── FETCH USERS ──
+async function loadUsers() {
+  try {
+    const res = await fetch(`${API}/api/auth/users`);
+    users = await res.json();
+    renderUsers();
+  } catch (e) {
+    document.getElementById('user-list').innerHTML =
+      `<div style="text-align:center;padding:40px 0;color:#E24B4A;font-size:14px;">
+        Could not connect to API.<br>Make sure the server is running.
+      </div>`;
+  }
+}
+
+function getInitials(name) {
+  return name.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
+}
+
+function formatRole(role) {
+  if (role === 'AssistantManager') return 'Assistant Manager';
+  if (role === 'ShiftLead') return 'Shift Lead';
+  return role;
+}
+
+function renderUsers() {
+  const list = document.getElementById('user-list');
+  list.innerHTML = users.map(u => `
+    <div class="user-card" id="user-${u.id}" onclick="selectUser(${u.id})">
+      <div class="user-avatar">${getInitials(u.name)}</div>
+      <div class="user-info">
+        <div class="user-name">${u.name}</div>
+        <div class="user-role">${formatRole(u.role)}</div>
+      </div>
+      <div class="user-check"></div>
+    </div>
+  `).join('');
+}
+
+function selectUser(id) {
+  document.querySelectorAll('.user-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById(`user-${id}`).classList.add('selected');
+  selectedUser = users.find(u => u.id === id);
+  document.getElementById('btn-continue').disabled = false;
+}
+
+// ── NAVIGATION ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goToPin() {
+  if (!selectedUser) return;
+  pin = '';
+  updateDots();
+  document.getElementById('pin-greeting').textContent = `Hello, ${selectedUser.name.split(' ')[0]}`;
+  document.getElementById('pin-error').classList.remove('show');
+  showScreen('screen-pin');
+}
+
+function goBack() {
+  pin = '';
+  showScreen('screen-select');
+}
+
+// ── PIN KEYPAD ──
+function pressKey(k) {
+  if (pin.length >= 4) return;
+  pin += k;
+  updateDots();
+  if (pin.length === 4) submitPin();
+}
+
+function deleteKey() {
+  pin = pin.slice(0, -1);
+  updateDots();
+  document.getElementById('pin-error').classList.remove('show');
+}
+
+function updateDots() {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById(`dot-${i}`);
+    dot.classList.toggle('filled', i < pin.length);
+    dot.classList.remove('error');
+  }
+}
+
+function showPinError() {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById(`dot-${i}`);
+    dot.classList.remove('filled');
+    dot.classList.add('error');
+  }
+  document.getElementById('pin-error').classList.add('show');
+  setTimeout(() => {
+    for (let i = 0; i < 4; i++) {
+      document.getElementById(`dot-${i}`).classList.remove('error');
+    }
+    pin = '';
+    updateDots();
+  }, 600);
+}
+
+async function submitPin() {
+  const overlay = document.getElementById('loading');
+  overlay.classList.add('show');
+
+  try {
+    const res = await fetch(`${API}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: selectedUser.id, pin })
+    });
+
+    overlay.classList.remove('show');
+
+    if (res.ok) {
+      const data = await res.json();
+      sessionStorage.setItem('lc_user', JSON.stringify(data));
+      window.location.href = 'home.html';
+    } else {
+      showPinError();
+    }
+  } catch (e) {
+    overlay.classList.remove('show');
+    showPinError();
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('lc_user');
+  selectedUser = null;
+  pin = '';
+  document.querySelectorAll('.user-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('btn-continue').disabled = true;
+  showScreen('screen-select');
+}
+
+loadUsers();
+</script>
+</body>
+</html>

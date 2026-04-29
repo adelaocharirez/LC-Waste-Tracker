@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>LC Waste Tracker - Summary</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --red: #C8102E; --red-dark: #A50D26; --red-dim: rgba(200,16,46,0.12);
+    --bg: #0F0F0F; --surface: #1A1A1A; --surface2: #222222; --surface3: #2A2A2A;
+    --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.12);
+    --text: #F0F0F0; --text-muted: #777; --text-dim: #444;
+    --green: #2ECC71; --green-dim: rgba(46,204,113,0.1);
+    --orange: #E67E22; --blue: #3B82F6;
+  }
+  html, body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100%; }
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+  .topbar-left { display: flex; align-items: center; gap: 10px; }
+  .back-btn { width: 30px; height: 30px; background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; flex-shrink: 0; }
+  .back-arrow { width: 7px; height: 7px; border-left: 2px solid var(--text-muted); border-bottom: 2px solid var(--text-muted); transform: rotate(45deg); margin-left: 3px; }
+  .topbar-title { font-size: 14px; font-weight: 600; }
+  .topbar-date { font-size: 11px; color: var(--text-muted); }
+  .export-btn { background: none; border: 1px solid var(--border); border-radius: 7px; padding: 5px 10px; color: var(--text-muted); font-family: 'Inter', sans-serif; font-size: 11px; cursor: pointer; }
+  .export-btn:active { background: var(--surface2); }
+  .tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 16px; }
+  .tab { flex: 1; padding: 11px 4px; text-align: center; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+  .tab.active { color: var(--text); border-bottom-color: var(--red); }
+  .tab-content { display: none; padding: 16px; padding-bottom: 100px; }
+  .tab-content.active { display: block; }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 18px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 13px; }
+  .stat-card.full { grid-column: 1/-1; }
+  .stat-card.red-accent { border-color: rgba(200,16,46,0.3); background: var(--red-dim); }
+  .stat-label { font-size: 9px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px; }
+  .stat-value { font-size: 26px; font-weight: 600; color: var(--red); }
+  .stat-value.white { color: var(--text); font-size: 20px; }
+  .stat-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+  .section-head { font-size: 10px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 9px; }
+  .section-wrap { margin-bottom: 18px; }
+  .breakdown-list { display: flex; flex-direction: column; gap: 9px; }
+  .breakdown-row { display: flex; align-items: center; gap: 9px; }
+  .breakdown-name { font-size: 12px; color: var(--text); width: 120px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .breakdown-bar-wrap { flex: 1; background: var(--surface2); border-radius: 4px; height: 7px; overflow: hidden; }
+  .breakdown-bar { height: 100%; border-radius: 4px; background: var(--red); transition: width 0.6s ease; }
+  .breakdown-val { font-size: 11px; font-weight: 500; color: var(--text-muted); width: 44px; text-align: right; flex-shrink: 0; }
+  .log-list { display: flex; flex-direction: column; gap: 7px; }
+  .log-entry { background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 11px 13px; display: flex; align-items: flex-start; gap: 10px; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+  .entry-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); flex-shrink: 0; margin-top: 5px; }
+  .entry-info { flex: 1; min-width: 0; }
+  .entry-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
+  .entry-name { font-size: 13px; font-weight: 500; }
+  .entry-cost { font-size: 13px; font-weight: 600; color: var(--red); }
+  .entry-meta { font-size: 11px; color: var(--text-muted); }
+  .entry-reason { display: inline-block; background: var(--surface2); border-radius: 3px; padding: 1px 5px; font-size: 10px; margin-right: 4px; }
+  .delete-btn { background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 2px; font-size: 15px; flex-shrink: 0; transition: color 0.15s; }
+  .delete-btn:active { color: var(--red); }
+  .empty-state { text-align: center; padding: 36px 20px; color: var(--text-muted); font-size: 13px; line-height: 1.6; }
+  .photo-wrap { background: var(--surface); border: 1.5px dashed var(--border2); border-radius: 11px; padding: 20px; text-align: center; cursor: pointer; margin-bottom: 14px; transition: border-color 0.15s; }
+  .photo-wrap:active { border-color: var(--red); }
+  .photo-wrap.has-photo { border-style: solid; border-color: var(--green); }
+  .photo-icon { font-size: 26px; margin-bottom: 7px; }
+  .photo-label { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+  .photo-sub { font-size: 11px; color: var(--text-muted); }
+  .photo-preview { width: 100%; border-radius: 8px; margin-top: 10px; display: none; }
+  #photo-input { display: none; }
+  .close-btn { width: 100%; padding: 14px; background: var(--red); border: none; border-radius: 11px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; color: #fff; cursor: pointer; margin-bottom: 10px; transition: background 0.15s; }
+  .close-btn:active { background: var(--red-dark); }
+  .close-btn:disabled { background: var(--surface2); color: var(--text-dim); cursor: not-allowed; }
+  .history-list { display: flex; flex-direction: column; gap: 7px; }
+  .history-card { background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 13px; display: flex; align-items: center; justify-content: space-between; }
+  .history-date { font-size: 13px; font-weight: 500; }
+  .history-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .history-total { font-size: 15px; font-weight: 600; color: var(--red); }
+  .loading { text-align: center; padding: 36px; color: var(--text-muted); font-size: 13px; }
+  .spinner { width: 22px; height: 22px; border: 2px solid var(--surface2); border-top-color: var(--red); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 10px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--surface3); border: 1px solid var(--border2); border-radius: 22px; padding: 9px 18px; font-size: 12px; font-weight: 500; color: var(--text); white-space: nowrap; z-index: 200; opacity: 0; transition: all 0.25s; display: flex; align-items: center; gap: 7px; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+  .total-bar { background: var(--surface2); border-radius: 8px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .total-bar-label { font-size: 12px; color: var(--text-muted); }
+  .total-bar-value { font-size: 18px; font-weight: 600; color: var(--red); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <a class="back-btn" href="home.html"><div class="back-arrow"></div></a>
+    <div>
+      <div class="topbar-title">Summary</div>
+      <div class="topbar-date" id="topbar-date">—</div>
+    </div>
+  </div>
+  <button class="export-btn" onclick="exportReport()">⬇ Export</button>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('today',this)">Today</div>
+  <div class="tab" onclick="switchTab('breakdown',this)">Breakdown</div>
+  <div class="tab" onclick="switchTab('history',this)">History</div>
+  <div class="tab" onclick="switchTab('closeshift',this)">Close Shift</div>
+</div>
+
+<!-- TODAY -->
+<div class="tab-content active" id="tab-today">
+  <div class="stat-grid">
+    <div class="stat-card full red-accent">
+      <div class="stat-label">Total Waste Value Today</div>
+      <div class="stat-value" id="stat-total">$0.00</div>
+      <div class="stat-sub" id="stat-sub">Loading...</div>
+    </div>
+    <div class="stat-card"><div class="stat-label">Items Wasted</div><div class="stat-value white" id="stat-items">0</div></div>
+    <div class="stat-card"><div class="stat-label">Log Entries</div><div class="stat-value white" id="stat-entries">0</div></div>
+  </div>
+  <div class="section-wrap">
+    <div class="section-head">Today's Entries</div>
+    <div class="log-list" id="log-list"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+  </div>
+</div>
+
+<!-- BREAKDOWN -->
+<div class="tab-content" id="tab-breakdown">
+  <div class="total-bar">
+    <div class="total-bar-label">Total waste today</div>
+    <div class="total-bar-value" id="breakdown-total">$0.00</div>
+  </div>
+  <div class="section-wrap">
+    <div class="section-head">By Item</div>
+    <div class="breakdown-list" id="by-item-list"><div class="loading"><div class="spinner"></div></div></div>
+  </div>
+  <div class="section-wrap">
+    <div class="section-head">By Reason</div>
+    <div class="breakdown-list" id="by-reason-list"></div>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div class="tab-content" id="tab-history">
+  <div class="section-wrap">
+    <div class="section-head">Last 30 Days</div>
+    <div class="history-list" id="history-list"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+  </div>
+</div>
+
+<!-- CLOSE SHIFT -->
+<div class="tab-content" id="tab-closeshift">
+  <div class="stat-grid" style="margin-bottom:18px;">
+    <div class="stat-card full red-accent">
+      <div class="stat-label">Total Waste This Shift</div>
+      <div class="stat-value" id="close-total">$0.00</div>
+      <div class="stat-sub" id="close-sub">0 entries</div>
+    </div>
+  </div>
+  <div class="section-wrap">
+    <div class="section-head">End-of-Night Photo</div>
+    <div class="photo-wrap" id="photo-wrap" onclick="document.getElementById('photo-input').click()">
+      <div class="photo-icon">📸</div>
+      <div class="photo-label">Attach shift-end photo</div>
+      <div class="photo-sub">Required for shift verification and accountability</div>
+      <img class="photo-preview" id="photo-preview" alt="Shift photo">
+    </div>
+    <input type="file" id="photo-input" accept="image/*" capture="environment" onchange="handlePhoto(this)">
+  </div>
+  <button class="close-btn" id="close-btn" onclick="closeShift()">Submit & Close Shift</button>
+  <div style="text-align:center;font-size:11px;color:var(--text-muted);">This finalizes today's waste log. You will be signed out.</div>
+</div>
+
+<div class="toast" id="toast"><div class="toast-dot"></div><span id="toast-msg">Done</span></div>
+
+<script>
+const API = 'http://littlecaesarswastetracker-env.eba-3hixjq7q.us-east-1.elasticbeanstalk.com';
+let summaryData = null, todayLogs = [], photoFile = null;
+
+function init() {
+  const u = JSON.parse(sessionStorage.getItem('lc_user')||'{}');
+  if (!u.id) { window.location.href='login.html'; return; }
+  document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  loadAll();
+}
+
+async function loadAll() { await Promise.all([loadSummary(), loadLogs(), loadHistory()]); }
+
+async function loadSummary() {
+  try {
+    const r = await fetch(`${API}/api/summary/today`);
+    summaryData = await r.json();
+    renderStats(); renderBreakdowns();
+  } catch(e) { console.error(e); }
+}
+
+async function loadLogs() {
+  try {
+    const r = await fetch(`${API}/api/wastelog/today`);
+    todayLogs = await r.json();
+    renderLogs();
+  } catch(e) { console.error(e); }
+}
+
+async function loadHistory() {
+  try {
+    const r = await fetch(`${API}/api/summary/history`);
+    renderHistory(await r.json());
+  } catch(e) { console.error(e); }
+}
+
+function renderStats() {
+  if (!summaryData) return;
+  const t = Number(summaryData.totalWasteValue).toFixed(2);
+  document.getElementById('stat-total').textContent = `$${t}`;
+  document.getElementById('stat-items').textContent = summaryData.totalItems;
+  document.getElementById('stat-entries').textContent = summaryData.totalEntries;
+  document.getElementById('stat-sub').textContent = `${summaryData.totalItems} items across ${summaryData.totalEntries} entr${summaryData.totalEntries!==1?'ies':'y'}`;
+  document.getElementById('close-total').textContent = `$${t}`;
+  document.getElementById('close-sub').textContent = `${summaryData.totalEntries} entr${summaryData.totalEntries!==1?'ies':'y'} logged`;
+  document.getElementById('breakdown-total').textContent = `$${t}`;
+}
+
+function renderLogs() {
+  const list = document.getElementById('log-list');
+  if (!todayLogs.length) { list.innerHTML=`<div class="empty-state">📋<br>No waste logged today yet.</div>`; return; }
+  list.innerHTML = todayLogs.map(l=>`
+    <div class="log-entry" id="log-${l.id}">
+      <div class="entry-dot"></div>
+      <div class="entry-info">
+        <div class="entry-top"><div class="entry-name">${l.quantity}× ${l.itemName}</div><div class="entry-cost">-$${Number(l.totalCost).toFixed(2)}</div></div>
+        <div class="entry-meta"><span class="entry-reason">${l.reason}</span>${l.shift} · ${formatTime(l.loggedAt)} · ${l.loggedBy}${l.notes?` · "${l.notes}"`:''}
+        </div>
+      </div>
+      <button class="delete-btn" onclick="deleteLog(${l.id})">✕</button>
+    </div>`).join('');
+}
+
+function renderBreakdowns() {
+  if (!summaryData) return;
+  const byItem = summaryData.byItem||[], byReason = summaryData.byReason||[];
+  const maxI = Math.max(...byItem.map(i=>i.total),1), maxR = Math.max(...byReason.map(r=>r.total),1);
+  const il = document.getElementById('by-item-list');
+  il.innerHTML = !byItem.length ? `<div style="color:var(--text-muted);font-size:13px;">No data yet</div>` :
+    [...byItem].sort((a,b)=>b.total-a.total).map(i=>`
+      <div class="breakdown-row">
+        <div class="breakdown-name">${i.item}</div>
+        <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:${(i.total/maxI*100).toFixed(0)}%"></div></div>
+        <div class="breakdown-val">$${Number(i.total).toFixed(0)}</div>
+      </div>`).join('');
+  const rl = document.getElementById('by-reason-list');
+  rl.innerHTML = !byReason.length ? `<div style="color:var(--text-muted);font-size:13px;">No data yet</div>` :
+    [...byReason].sort((a,b)=>b.total-a.total).map(r=>`
+      <div class="breakdown-row">
+        <div class="breakdown-name">${r.reason}</div>
+        <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:${(r.total/maxR*100).toFixed(0)}%;background:var(--orange)"></div></div>
+        <div class="breakdown-val">$${Number(r.total).toFixed(0)}</div>
+      </div>`).join('');
+}
+
+function renderHistory(history) {
+  const list = document.getElementById('history-list');
+  if (!history.length) { list.innerHTML=`<div class="empty-state">📅<br>No historical data yet.</div>`; return; }
+  list.innerHTML = history.map(h=>{
+    const d = new Date(h.date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    return `<div class="history-card"><div><div class="history-date">${d}</div><div class="history-sub">${h.totalEntries} entr${h.totalEntries!==1?'ies':'y'} · ${h.totalItems} items</div></div><div class="history-total">$${Number(h.totalWasteValue).toFixed(2)}</div></div>`;
+  }).join('');
+}
+
+async function deleteLog(id) {
+  try {
+    const r = await fetch(`${API}/api/wastelog/${id}`,{method:'DELETE'});
+    if (r.ok) {
+      document.getElementById(`log-${id}`)?.remove();
+      todayLogs = todayLogs.filter(l=>l.id!==id);
+      await loadSummary();
+      showToast('Entry removed');
+    }
+  } catch(e) { showToast('Failed to delete'); }
+}
+
+function handlePhoto(input) {
+  const file = input.files[0]; if (!file) return;
+  photoFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const p = document.getElementById('photo-preview');
+    p.src = e.target.result; p.style.display = 'block';
+    document.getElementById('photo-wrap').classList.add('has-photo');
+    document.querySelector('.photo-icon').textContent = '✅';
+    document.querySelector('.photo-label').textContent = 'Photo attached';
+    document.querySelector('.photo-sub').textContent = 'Tap to change';
+    showToast('📸 Photo attached');
+  };
+  reader.readAsDataURL(file);
+}
+
+async function closeShift() {
+  const btn = document.getElementById('close-btn');
+  btn.disabled = true; btn.textContent = 'Submitting...';
+  try {
+    if (photoFile) {
+      const fd = new FormData();
+      fd.append('photo', photoFile);
+      const pr = await fetch(`${API}/api/summary/upload-photo`,{method:'POST',body:fd});
+      if (pr.ok) { const pd = await pr.json(); console.log('Photo URL:', pd.url); }
+    }
+    showToast('✅ Shift closed successfully');
+    setTimeout(() => { sessionStorage.removeItem('lc_user'); window.location.href='login.html'; }, 1800);
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Submit & Close Shift';
+    showToast('Something went wrong');
+  }
+}
+
+function exportReport() {
+  if (!todayLogs.length && !summaryData) { showToast('No data to export'); return; }
+  const date = new Date().toLocaleDateString();
+  const total = summaryData ? Number(summaryData.totalWasteValue).toFixed(2) : '0.00';
+  let txt = `LC WASTE REPORT — ${date}\n${'─'.repeat(40)}\nLocation: Saddle Creek\nTotal Waste: $${total}\nEntries: ${todayLogs.length}\n\nENTRIES:\n`;
+  todayLogs.forEach(l => { txt += `[${l.shift} ${formatTime(l.loggedAt)}] ${l.quantity}x ${l.itemName} — ${l.reason} — $${Number(l.totalCost).toFixed(2)}\n`; if (l.notes) txt += `  Note: ${l.notes}\n`; });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([txt],{type:'text/plain'}));
+  a.download = `waste-report-${date.replace(/\//g,'-')}.txt`;
+  a.click();
+  showToast('📄 Report exported');
+}
+
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  el.classList.add('active');
+}
+
+function formatTime(iso) { return new Date(iso).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}); }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>LC Waste Tracker - Log</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --red: #C8102E;
+    --red-dark: #A50D26;
+    --red-dim: rgba(200, 16, 46, 0.12);
+    --bg: #0F0F0F;
+    --surface: #1A1A1A;
+    --surface2: #222222;
+    --surface3: #2A2A2A;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.12);
+    --text: #F0F0F0;
+    --text-muted: #777;
+    --text-dim: #444;
+    --green: #2ECC71;
+  }
+
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 16px; }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 10px; }
+  .logo { width: 32px; height: 32px; background: var(--red); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #fff; flex-shrink: 0; }
+  .topbar-user { font-size: 13px; font-weight: 500; color: var(--text); }
+  .topbar-role { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+  .shift-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 10px;
+  }
+  .shift-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+  .shift-text { font-size: 11px; font-weight: 500; color: var(--text-muted); }
+
+  /* ── CART INDICATOR ── */
+  .cart-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .cart-info { font-size: 13px; color: var(--text-muted); }
+  .cart-info span { color: var(--text); font-weight: 500; }
+  .btn-summary {
+    background: var(--red);
+    border: none; border-radius: 8px;
+    padding: 7px 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px; font-weight: 600;
+    color: #fff; cursor: pointer;
+    transition: background 0.15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn-summary:active { background: var(--red-dark); }
+  .btn-summary:disabled { background: var(--surface2); color: var(--text-dim); cursor: not-allowed; }
+  .cart-count {
+    background: #fff;
+    color: var(--red);
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    font-size: 10px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ── MAIN CONTENT ── */
+  .main { padding: 0 0 100px; }
+
+  /* ── SECTION HEADER ── */
+  .section-head {
+    padding: 16px 16px 8px;
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* ── MENU GRID ── */
+  .menu-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding: 0 16px;
+  }
+  .menu-item {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 12px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    position: relative;
+    -webkit-user-select: none; user-select: none;
+  }
+  .menu-item:active { transform: scale(0.97); }
+  .menu-item.selected {
+    border-color: var(--red);
+    background: var(--red-dim);
+  }
+  .menu-item.hnr { border-left: 3px solid var(--red); }
+  .item-name { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.3; }
+  .item-price { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .item-check {
+    position: absolute; top: 10px; right: 10px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--red);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.15s;
+  }
+  .menu-item.selected .item-check { opacity: 1; }
+  .item-check::after {
+    content: '';
+    width: 4px; height: 7px;
+    border-right: 1.5px solid #fff;
+    border-bottom: 1.5px solid #fff;
+    transform: rotate(45deg) translate(-1px, -1px);
+  }
+  .hnr-tag {
+    display: inline-block;
+    background: var(--red-dim);
+    color: var(--red);
+    font-size: 9px; font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 2px 6px; border-radius: 4px;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+  }
+
+  /* Custom item */
+  .custom-row {
+    padding: 8px 16px 0;
+  }
+  .custom-item {
+    background: var(--surface);
+    border: 1.5px dashed var(--border2);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .custom-item.selected { border-color: var(--red); border-style: solid; background: var(--red-dim); }
+  .custom-icon {
+    width: 36px; height: 36px;
+    background: var(--surface2);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .custom-icon svg { width: 16px; height: 16px; }
+  .custom-text .item-name { font-size: 13px; }
+  .custom-text .item-price { font-size: 12px; color: var(--text-muted); }
+  .custom-price-input {
+    width: 100%; margin-top: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    outline: none;
+    display: none;
+  }
+  .custom-price-input:focus { border-color: var(--red); }
+  .custom-name-input {
+    width: 100%; margin-top: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    outline: none;
+    display: none;
+  }
+  .custom-name-input:focus { border-color: var(--red); }
+  .custom-name-input::placeholder, .custom-price-input::placeholder { color: var(--text-dim); }
+
+  /* ── QTY & REASON ── */
+  .controls { padding: 16px; }
+  .control-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .control-label { font-size: 13px; font-weight: 500; color: var(--text); }
+  .stepper {
+    display: flex; align-items: center; gap: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden;
+  }
+  .step-btn {
+    width: 40px; height: 40px;
+    background: none; border: none;
+    font-size: 20px; color: var(--text);
+    cursor: pointer; transition: background 0.1s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step-btn:active { background: var(--surface2); }
+  .step-val {
+    width: 40px; text-align: center;
+    font-size: 17px; font-weight: 600; color: var(--text);
+  }
+
+  /* ── SHIFT SELECTOR ── */
+  .shift-row {
+    display: flex; gap: 8px; margin-bottom: 16px;
+  }
+  .shift-chip {
+    flex: 1; padding: 9px 6px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; color: var(--text-muted);
+    transition: all 0.15s;
+  }
+  .shift-chip.active { border-color: var(--red); color: var(--text); background: var(--red-dim); }
+
+  /* ── REASONS ── */
+  .reasons-wrap { margin-bottom: 16px; }
+  .reasons-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .reason-chip {
+    padding: 10px 12px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; color: var(--text-muted);
+    text-align: center;
+    transition: all 0.15s;
+    -webkit-user-select: none; user-select: none;
+  }
+  .reason-chip:active { transform: scale(0.97); }
+  .reason-chip.selected { border-color: var(--red); color: var(--text); background: var(--red-dim); }
+
+  /* ── NOTES ── */
+  .notes-wrap { margin-bottom: 16px; }
+  textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    padding: 12px;
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: var(--red); }
+  textarea::placeholder { color: var(--text-dim); }
+
+  /* ── SUBMIT ── */
+  .submit-wrap {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    padding: 12px 16px;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+  }
+  .btn-submit {
+    width: 100%; padding: 15px;
+    background: var(--red);
+    border: none; border-radius: 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px; font-weight: 600;
+    color: #fff; cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn-submit:active { background: var(--red-dark); transform: scale(0.98); }
+  .btn-submit:disabled { background: var(--surface2); color: var(--text-dim); cursor: not-allowed; transform: none; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 80px; left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: var(--surface3);
+    border: 1px solid var(--border2);
+    border-radius: 24px;
+    padding: 10px 20px;
+    font-size: 13px; font-weight: 500; color: var(--text);
+    white-space: nowrap;
+    z-index: 200;
+    opacity: 0; transition: all 0.25s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+
+  /* ── DIVIDER ── */
+  .divider { height: 1px; background: var(--border); margin: 8px 16px; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">LC</div>
+    <div>
+      <div class="topbar-user" id="topbar-user">—</div>
+      <div class="topbar-role" id="topbar-role">—</div>
+    </div>
+  </div>
+  <div class="shift-badge">
+    <div class="shift-dot"></div>
+    <div class="shift-text" id="topbar-shift">—</div>
+  </div>
+</div>
+
+<!-- CART BAR -->
+<div class="cart-bar">
+  <div class="cart-info">
+    Session: <span id="cart-count">0 items</span> &nbsp;·&nbsp; <span id="cart-total">$0.00</span>
+  </div>
+  <button class="btn-summary" id="btn-summary" disabled onclick="goToSummary()">
+    Done
+    <div class="cart-count" id="cart-badge">0</div>
+  </button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="section-head">Hot-N-Ready</div>
+  <div class="menu-grid" id="hnr-grid"></div>
+
+  <div class="divider" style="margin-top:16px;"></div>
+  <div class="section-head">Pizzas</div>
+  <div class="menu-grid" id="pizza-grid"></div>
+
+  <div class="divider" style="margin-top:16px;"></div>
+  <div class="section-head">Sides & Bread</div>
+  <div class="menu-grid" id="sides-grid"></div>
+
+  <div class="divider" style="margin-top:16px;"></div>
+  <div class="section-head">Wings & Other</div>
+  <div class="menu-grid" id="other-grid"></div>
+
+  <div class="custom-row">
+    <div class="custom-item" id="custom-card" onclick="toggleCustom()">
+      <div class="custom-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#777" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </div>
+      <div class="custom-text">
+        <div class="item-name">Other / Custom Item</div>
+        <div class="item-price">Enter name & price manually</div>
+      </div>
+    </div>
+    <input class="custom-name-input" id="custom-name" placeholder="Item name" />
+    <input class="custom-price-input" id="custom-price" type="number" step="0.01" min="0" placeholder="Price per unit (e.g. 8.99)" />
+  </div>
+
+  <div class="controls">
+    <!-- Shift -->
+    <div class="control-label" style="margin-bottom:8px;">Shift</div>
+    <div class="shift-row">
+      <div class="shift-chip" id="shift-Morning" onclick="selectShift('Morning')">Morning</div>
+      <div class="shift-chip" id="shift-Afternoon" onclick="selectShift('Afternoon')">Afternoon</div>
+      <div class="shift-chip" id="shift-Night" onclick="selectShift('Night')">Night</div>
+    </div>
+
+    <!-- Quantity -->
+    <div class="control-row">
+      <div class="control-label">Quantity</div>
+      <div class="stepper">
+        <button class="step-btn" onclick="changeQty(-1)">−</button>
+        <div class="step-val" id="qty-display">1</div>
+        <button class="step-btn" onclick="changeQty(1)">+</button>
+      </div>
+    </div>
+
+    <!-- Reason -->
+    <div class="reasons-wrap">
+      <div class="control-label" style="margin-bottom:10px;">Reason</div>
+      <div class="reasons-grid" id="reasons-grid"></div>
+    </div>
+
+    <!-- Notes -->
+    <div class="notes-wrap">
+      <div class="control-label" style="margin-bottom:8px;">Notes <span style="color:var(--text-dim);font-weight:400;">(optional)</span></div>
+      <textarea id="notes-input" rows="2" placeholder="Any additional details..."></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- SUBMIT -->
+<div class="submit-wrap">
+  <button class="btn-submit" id="btn-submit" disabled onclick="submitLog()">
+    Log Waste Entry
+  </button>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-dot"></div>
+  <span id="toast-msg">Logged</span>
+</div>
+
+<script>
+const API = 'http://littlecaesarswastetracker-env.eba-3hixjq7q.us-east-1.elasticbeanstalk.com';
+
+// ── STATE ──
+let menuItems = [];
+let reasons = [];
+let selectedItem = null;
+let selectedReason = null;
+let selectedShift = null;
+let qty = 1;
+let sessionLogs = [];
+let isCustom = false;
+
+// ── CATEGORY MAP ──
+const HNR = ['Classic Pepperoni', 'Classic Cheese'];
+const PIZZAS = ['3 Meat Treat', '5 Meat Feast', 'Ultimate Supreme', 'Hula Hawaiian', 'Veggie', 'Classic Italian Sausage', 'Old World Fanceroni Pepperoni', 'Slices-N-Stix', 'EMB Cheese', 'EMB Pepperoni', 'EMB Sausage'];
+const SIDES = ['Crazy Bread', 'Stuffed Crazy Bread', 'Italian Cheese Bread', 'Custom Italian Cheese Bread', 'Pepperoni Cheese Bread', '4 Cheese Crazy Puffs', 'Pepperoni Crazy Puffs'];
+
+// emoji map
+const EMOJI = {
+  'Classic Pepperoni': '🍕', 'Classic Cheese': '🧀',
+  '3 Meat Treat': '🥩', '5 Meat Feast': '🍖', 'Ultimate Supreme': '👑',
+  'Hula Hawaiian': '🍍', 'Veggie': '🥦', 'Classic Italian Sausage': '🌭',
+  'Old World Fanceroni Pepperoni': '🍕', 'Slices-N-Stix': '🍕',
+  'EMB Cheese': '🧀', 'EMB Pepperoni': '🍕', 'EMB Sausage': '🌭',
+  'Crazy Bread': '🥖', 'Stuffed Crazy Bread': '🥖',
+  'Italian Cheese Bread': '🧀', 'Custom Italian Cheese Bread': '🧀',
+  'Pepperoni Cheese Bread': '🍕', '4 Cheese Crazy Puffs': '🫓',
+  'Pepperoni Crazy Puffs': '🫓', 'Caesar Wings': '🍗',
+  'Caesar Dip': '🥣', 'Crazy Sauce': '🥣',
+  'Cookie Dough Brownie Twix': '🍫', 'Cookie Dough Brownie M&M': '🍫',
+};
+
+// ── INIT ──
+function init() {
+  const user = JSON.parse(sessionStorage.getItem('lc_user') || '{}');
+  if (!user.id) { window.location.href = 'login.html'; return; }
+
+  document.getElementById('topbar-user').textContent = user.name || '—';
+  document.getElementById('topbar-role').textContent = formatRole(user.role || '');
+
+  const hr = new Date().getHours();
+  const autoShift = hr < 12 ? 'Morning' : hr < 17 ? 'Afternoon' : 'Night';
+  selectShift(autoShift);
+  document.getElementById('topbar-shift').textContent = autoShift + ' Shift';
+
+  loadData();
+}
+
+function formatRole(r) {
+  if (r === 'AssistantManager') return 'Assistant Manager';
+  if (r === 'ShiftLead') return 'Shift Lead';
+  return r;
+}
+
+async function loadData() {
+  try {
+    const [itemsRes, reasonsRes] = await Promise.all([
+      fetch(`${API}/api/menuitems`),
+      fetch(`${API}/api/wastelog/reasons`)
+    ]);
+    menuItems = await itemsRes.json();
+    reasons = await reasonsRes.json();
+    renderMenuItems();
+    renderReasons();
+  } catch(e) {
+    console.error('Failed to load data', e);
+  }
+}
+
+// ── RENDER MENU ──
+function renderMenuItems() {
+  const hnr = menuItems.filter(i => HNR.includes(i.name) && !i.isCustom);
+  const pizzas = menuItems.filter(i => PIZZAS.includes(i.name) && !i.isCustom);
+  const sides = menuItems.filter(i => SIDES.includes(i.name) && !i.isCustom);
+  const other = menuItems.filter(i => !HNR.includes(i.name) && !PIZZAS.includes(i.name) && !SIDES.includes(i.name) && !i.isCustom);
+
+  renderGrid('hnr-grid', hnr, true);
+  renderGrid('pizza-grid', pizzas, false);
+  renderGrid('sides-grid', sides, false);
+  renderGrid('other-grid', other, false);
+}
+
+function renderGrid(containerId, items, isHnr) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = items.map(item => `
+    <div class="menu-item ${isHnr ? 'hnr' : ''}" id="item-${item.id}" onclick="selectItem(${item.id})">
+      ${isHnr ? '<div class="hnr-tag">HNR</div>' : ''}
+      <div class="item-check"></div>
+      <div class="item-name">${EMOJI[item.name] ? EMOJI[item.name] + ' ' : ''}${item.name}</div>
+      <div class="item-price">$${Number(item.customerPrice).toFixed(2)}/ea</div>
+    </div>
+  `).join('');
+}
+
+function renderReasons() {
+  const grid = document.getElementById('reasons-grid');
+  const unique = reasons.filter((r, i, self) => self.findIndex(x => x.reason === r.reason) === i);
+  grid.innerHTML = unique.map(r => `
+    <div class="reason-chip" id="reason-${r.id}" onclick="selectReason(${r.id})">${r.reason}</div>
+  `).join('');
+}
+
+// ── SELECTION ──
+function selectItem(id) {
+  document.querySelectorAll('.menu-item').forEach(c => c.classList.remove('selected'));
+  document.getElementById(`item-${id}`).classList.add('selected');
+  selectedItem = menuItems.find(i => i.id === id);
+  isCustom = false;
+  document.getElementById('custom-card').classList.remove('selected');
+  document.getElementById('custom-name').style.display = 'none';
+  document.getElementById('custom-price').style.display = 'none';
+  updateSubmitBtn();
+}
+
+function toggleCustom() {
+  isCustom = !isCustom;
+  document.querySelectorAll('.menu-item').forEach(c => c.classList.remove('selected'));
+  selectedItem = isCustom ? menuItems.find(i => i.isCustom) : null;
+  document.getElementById('custom-card').classList.toggle('selected', isCustom);
+  document.getElementById('custom-name').style.display = isCustom ? 'block' : 'none';
+  document.getElementById('custom-price').style.display = isCustom ? 'block' : 'none';
+  if (isCustom) document.getElementById('custom-name').focus();
+  updateSubmitBtn();
+}
+
+function selectReason(id) {
+  document.querySelectorAll('.reason-chip').forEach(c => c.classList.remove('selected'));
+  document.getElementById(`reason-${id}`).classList.add('selected');
+  selectedReason = reasons.find(r => r.id === id);
+  updateSubmitBtn();
+}
+
+function selectShift(shift) {
+  document.querySelectorAll('.shift-chip').forEach(c => c.classList.remove('active'));
+  document.getElementById(`shift-${shift}`).classList.add('active');
+  selectedShift = shift;
+  document.getElementById('topbar-shift').textContent = shift + ' Shift';
+  updateSubmitBtn();
+}
+
+function changeQty(delta) {
+  qty = Math.max(1, Math.min(99, qty + delta));
+  document.getElementById('qty-display').textContent = qty;
+}
+
+function updateSubmitBtn() {
+  const hasItem = selectedItem !== null;
+  const hasReason = selectedReason !== null;
+  const hasShift = selectedShift !== null;
+  document.getElementById('btn-submit').disabled = !hasItem || !hasReason || !hasShift;
+}
+
+// ── SUBMIT ──
+async function submitLog() {
+  if (!selectedItem || !selectedReason || !selectedShift) return;
+
+  const user = JSON.parse(sessionStorage.getItem('lc_user') || '{}');
+  const customPrice = isCustom ? parseFloat(document.getElementById('custom-price').value) || 0 : 0;
+
+  const payload = {
+    userId: user.id,
+    menuItemId: selectedItem.id,
+    wasteReasonId: selectedReason.id,
+    quantity: qty,
+    customPrice,
+    shift: selectedShift,
+    notes: document.getElementById('notes-input').value.trim()
+  };
+
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.textContent = 'Logging...';
+
+  try {
+    const res = await fetch(`${API}/api/wastelog`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const itemName = isCustom ? document.getElementById('custom-name').value || 'Custom Item' : selectedItem.name;
+      sessionLogs.push({ name: itemName, qty, total: data.totalCost });
+      updateCartBar();
+      showToast(`${qty}× ${itemName} logged — $${Number(data.totalCost).toFixed(2)}`);
+      resetForm();
+    } else {
+      showToast('Failed to log. Try again.');
+    }
+  } catch(e) {
+    showToast('Connection error.');
+  }
+
+  btn.textContent = 'Log Waste Entry';
+  updateSubmitBtn();
+}
+
+function resetForm() {
+  document.querySelectorAll('.menu-item, .reason-chip').forEach(c => c.classList.remove('selected'));
+  document.getElementById('custom-card').classList.remove('selected');
+  document.getElementById('custom-name').style.display = 'none';
+  document.getElementById('custom-price').style.display = 'none';
+  document.getElementById('custom-name').value = '';
+  document.getElementById('custom-price').value = '';
+  document.getElementById('notes-input').value = '';
+  selectedItem = null;
+  selectedReason = null;
+  isCustom = false;
+  qty = 1;
+  document.getElementById('qty-display').textContent = '1';
+  updateSubmitBtn();
+}
+
+function updateCartBar() {
+  const count = sessionLogs.reduce((s, l) => s + l.qty, 0);
+  const total = sessionLogs.reduce((s, l) => s + Number(l.total), 0);
+  document.getElementById('cart-count').textContent = `${count} item${count !== 1 ? 's' : ''}`;
+  document.getElementById('cart-total').textContent = `$${total.toFixed(2)}`;
+  document.getElementById('cart-badge').textContent = sessionLogs.length;
+  document.getElementById('btn-summary').disabled = sessionLogs.length === 0;
+}
+
+function goToSummary() {
+  window.location.href = 'summary.html';
+}
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+init();
+</script>
+</body>
+</html>

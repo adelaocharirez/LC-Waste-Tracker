@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>LC Waste Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --red: #C8102E; --red-dark: #A50D26; --red-dim: rgba(200,16,46,0.12);
+    --bg: #0F0F0F; --surface: #1A1A1A; --surface2: #222222; --surface3: #2A2A2A;
+    --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.12);
+    --text: #F0F0F0; --text-muted: #777; --text-dim: #444;
+    --green: #2ECC71; --green-dim: rgba(46,204,113,0.12);
+    --blue: #3B82F6; --blue-dim: rgba(59,130,246,0.12);
+  }
+  html, body { min-height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; }
+  .header { padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .logo { width: 36px; height: 36px; background: var(--red); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #fff; flex-shrink: 0; }
+  .header-title { font-size: 15px; font-weight: 600; }
+  .header-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+  .signout-btn { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; color: var(--text-muted); font-family: 'Inter', sans-serif; font-size: 12px; cursor: pointer; }
+  .main { padding: 20px 20px 100px; }
+  .welcome-greeting { font-size: 22px; font-weight: 600; line-height: 1.25; margin-bottom: 4px; }
+  .welcome-greeting .red { color: var(--red); }
+  .welcome-sub { font-size: 12px; color: var(--text-muted); }
+  .shift-card { margin: 16px 0; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 13px 16px; display: flex; align-items: center; justify-content: space-between; }
+  .shift-left { display: flex; align-items: center; gap: 10px; }
+  .shift-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .shift-label { font-size: 13px; font-weight: 500; }
+  .shift-time { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+  .live-badge { background: var(--green-dim); border: 1px solid rgba(46,204,113,0.2); border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 500; color: var(--green); }
+  .stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+  .stat-mini { background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 12px 10px; }
+  .stat-mini-label { font-size: 9px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+  .stat-mini-value { font-size: 20px; font-weight: 600; }
+  .stat-mini-value.red { color: var(--red); }
+  .stat-mini-value.green { color: var(--green); }
+  .stat-mini-value.blue { color: var(--blue); }
+  .stat-mini-sub { font-size: 9px; color: var(--text-muted); margin-top: 2px; }
+  .section-label { font-size: 10px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
+  .actions { display: flex; flex-direction: column; gap: 9px; margin-bottom: 24px; }
+  .action-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 13px; padding: 16px; cursor: pointer; transition: transform 0.1s; display: flex; align-items: center; gap: 13px; text-decoration: none; }
+  .action-card:active { transform: scale(0.98); }
+  .action-card.primary { border-color: var(--red); background: var(--red-dim); }
+  .action-card.blue-card { border-color: rgba(59,130,246,0.3); background: var(--blue-dim); }
+  .action-icon { width: 46px; height: 46px; border-radius: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 20px; }
+  .action-card.primary .action-icon { background: var(--red); }
+  .action-card.secondary .action-icon { background: var(--surface2); }
+  .action-card.blue-card .action-icon { background: var(--blue-dim); }
+  .action-title { font-size: 14px; font-weight: 600; color: var(--text); }
+  .action-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .action-arrow { width: 16px; height: 16px; border-right: 2px solid var(--text-dim); border-top: 2px solid var(--text-dim); transform: rotate(45deg); flex-shrink: 0; }
+  .activity-list { display: flex; flex-direction: column; gap: 7px; }
+  .activity-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 11px 13px; display: flex; align-items: center; gap: 10px; }
+  .activity-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
+  .activity-name { font-size: 13px; color: var(--text); flex: 1; }
+  .activity-meta { font-size: 11px; color: var(--text-muted); }
+  .activity-cost { font-size: 13px; font-weight: 600; color: var(--red); flex-shrink: 0; }
+  .activity-empty { text-align: center; padding: 24px 20px; color: var(--text-muted); font-size: 13px; line-height: 1.6; }
+  .user-row { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 13px 16px; display: flex; align-items: center; gap: 12px; margin-top: 20px; }
+  .user-av { width: 36px; height: 36px; border-radius: 50%; background: var(--red-dim); border: 1px solid rgba(200,16,46,0.3); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--red); flex-shrink: 0; }
+  .user-nm { font-size: 13px; font-weight: 500; }
+  .user-role-tag { display: inline-block; margin-top: 3px; background: var(--red-dim); color: var(--red); font-size: 9px; font-weight: 600; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; }
+  .user-shift-info { font-size: 11px; color: var(--text-muted); text-align: right; }
+  .user-shift-info strong { display: block; color: var(--text); font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <div class="logo">LC</div>
+    <div><div class="header-title">Waste Tracker</div><div class="header-sub">Saddle Creek</div></div>
+  </div>
+  <button class="signout-btn" onclick="signOut()">Sign out</button>
+</div>
+
+<div class="main">
+  <div class="welcome-greeting">Good <span class="red" id="greeting">evening</span>,<br><span id="first-name">—</span>.</div>
+  <div class="welcome-sub" id="welcome-date">—</div>
+
+  <div class="shift-card">
+    <div class="shift-left">
+      <div class="shift-dot"></div>
+      <div><div class="shift-label" id="shift-label">— Shift</div><div class="shift-time" id="clock">—</div></div>
+    </div>
+    <div class="live-badge">● Live</div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-mini"><div class="stat-mini-label">Waste</div><div class="stat-mini-value red" id="s-total">$—</div><div class="stat-mini-sub">today</div></div>
+    <div class="stat-mini"><div class="stat-mini-label">Entries</div><div class="stat-mini-value blue" id="s-entries">—</div><div class="stat-mini-sub">logged</div></div>
+    <div class="stat-mini"><div class="stat-mini-label">Items</div><div class="stat-mini-value green" id="s-items">—</div><div class="stat-mini-sub">wasted</div></div>
+  </div>
+
+  <div class="section-label">Actions</div>
+  <div class="actions">
+    <a class="action-card primary" href="wastelog.html">
+      <div class="action-icon">➕</div>
+      <div style="flex:1;"><div class="action-title">Log Waste</div><div class="action-desc">Record items wasted this shift</div></div>
+      <div class="action-arrow"></div>
+    </a>
+    <a class="action-card secondary" href="summary.html">
+      <div class="action-icon">📊</div>
+      <div style="flex:1;"><div class="action-title">View Summary</div><div class="action-desc">Today's breakdown and totals</div></div>
+      <div class="action-arrow"></div>
+    </a>
+    <a class="action-card blue-card" href="summary.html">
+      <div class="action-icon">📅</div>
+      <div style="flex:1;"><div class="action-title">History</div><div class="action-desc">Last 30 days of waste reports</div></div>
+      <div class="action-arrow"></div>
+    </a>
+  </div>
+
+  <div class="section-label">Recent Activity</div>
+  <div class="activity-list" id="activity-list"><div class="activity-empty">Loading...</div></div>
+
+  <div class="user-row">
+    <div class="user-av" id="u-av">—</div>
+    <div style="flex:1;"><div class="user-nm" id="u-nm">—</div><div class="user-role-tag" id="u-role">—</div></div>
+    <div class="user-shift-info"><strong id="u-shift">—</strong>Shift</div>
+  </div>
+</div>
+
+<script>
+const API = 'http://littlecaesarswastetracker-env.eba-3hixjq7q.us-east-1.elasticbeanstalk.com';
+function initials(n) { return n.split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,2); }
+function role(r) { return r==='AssistantManager'?'Asst. Manager':r==='ShiftLead'?'Shift Lead':r; }
+function greeting() { const h=new Date().getHours(); return h<12?'morning':h<17?'afternoon':'evening'; }
+function shift() { const h=new Date().getHours(); return h<12?'Morning':h<17?'Afternoon':'Night'; }
+function tick() { document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+
+async function loadData() {
+  try {
+    const [sr, lr] = await Promise.all([fetch(`${API}/api/summary/today`), fetch(`${API}/api/wastelog/today`)]);
+    const s = await sr.json();
+    const logs = await lr.json();
+    document.getElementById('s-total').textContent = `$${Number(s.totalWasteValue).toFixed(2)}`;
+    document.getElementById('s-entries').textContent = s.totalEntries;
+    document.getElementById('s-items').textContent = s.totalItems;
+    const al = document.getElementById('activity-list');
+    if (!logs.length) { al.innerHTML = `<div class="activity-empty">No waste logged today yet.<br>Tap Log Waste to get started.</div>`; return; }
+    al.innerHTML = logs.slice(0,5).map(l=>`
+      <div class="activity-item">
+        <div class="activity-dot"></div>
+        <div style="flex:1;">
+          <div class="activity-name">${l.quantity}× ${l.itemName}</div>
+          <div class="activity-meta">${l.reason} · ${l.shift} · ${l.loggedBy}</div>
+        </div>
+        <div class="activity-cost">-$${Number(l.totalCost).toFixed(2)}</div>
+      </div>`).join('');
+    if (logs.length>5) al.innerHTML += `<div style="text-align:center;padding:8px;font-size:12px;color:var(--text-muted);">+${logs.length-5} more — <a href="summary.html" style="color:var(--red);text-decoration:none;">View all</a></div>`;
+  } catch(e) {
+    document.getElementById('s-total').textContent='$0.00';
+    document.getElementById('s-entries').textContent='0';
+    document.getElementById('s-items').textContent='0';
+    document.getElementById('activity-list').innerHTML=`<div class="activity-empty">Could not connect to server.</div>`;
+  }
+}
+
+function init() {
+  const u = JSON.parse(sessionStorage.getItem('lc_user')||'{}');
+  if (!u.id) { window.location.href='login.html'; return; }
+  const sh = shift();
+  document.getElementById('greeting').textContent = greeting();
+  document.getElementById('first-name').textContent = (u.name||'').split(' ')[0];
+  document.getElementById('welcome-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('shift-label').textContent = `${sh} Shift`;
+  document.getElementById('u-av').textContent = initials(u.name||'');
+  document.getElementById('u-nm').textContent = u.name||'—';
+  document.getElementById('u-role').textContent = role(u.role||'');
+  document.getElementById('u-shift').textContent = sh;
+  tick(); setInterval(tick,1000);
+  loadData();
+}
+
+function signOut() { sessionStorage.removeItem('lc_user'); window.location.href='login.html'; }
+init();
+</script>
+</body>
+</html>
